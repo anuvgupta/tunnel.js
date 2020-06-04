@@ -7,7 +7,7 @@ var configs = {
     data: {},
     save: (next = null) => {
         var db_json = JSON.stringify(configs.data, null, 3);
-        fs.writeFile('configs.json', db_json, function (e) {
+        fs.writeFile(`${__dirname}/configs.json`, db_json, function (e) {
             if (e) {
                 console.log('error: saving configs', e);
             } else {
@@ -18,12 +18,12 @@ var configs = {
     },
     save_sync: _ => {
         var db_json = JSON.stringify(configs.data, null, 3);
-        fs.writeFileSync('configs.json', db_json);
+        fs.writeFileSync(`${__dirname}/configs.json`, db_json);
         console.log('saved configs');
     },
     load: (next = null) => {
         try {
-            fs.readFile('configs.json', function (err, data) {
+            fs.readFile(`${__dirname}/configs.json`, function (err, data) {
                 try {
                     if (err) throw err;
                     data = JSON.parse(data);
@@ -59,7 +59,7 @@ var app = {
             } else if (arguments.length == 1) {
                 console.error('error: invalid argument');
             } else if (arguments.length == 2) {
-                if (arguments[1] != 'on' && arguments[1] != 'off') {
+                if (!(['on', 'off'].includes(arguments[1]))) {
                     console.error('error: second argument should be "on" or "off"');
                 } else {
                     var config_name = arguments[0];
@@ -83,7 +83,7 @@ var app = {
                                                     console.error('error: enabling proxy', stderr2)
                                                 } else {
                                                     console.log("enabled proxy");
-                                                    exec(`nohup ssh -2 -A -N -D ${config.local_port} ${config.ssh_config} > ${__dirname}/logs/${config_name}.log 2>&1 & echo $!`, (err3, stdout3, stderr3) => {
+                                                    exec(`nohup ssh -2 -NAT -D ${config.local_port} ${config.ssh_config} > ${__dirname}/logs/${config_name}.log 2>&1 & echo $!`, (err3, stdout3, stderr3) => {
                                                         if (err3) {
                                                             console.error('error: establishing tunnel', err3)
                                                         } else if (stderr3 && stderr3.trim() != "") {
