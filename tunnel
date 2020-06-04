@@ -1,2 +1,2 @@
 #!/bin/bash
-node /Users/anuv/Documents/GitHub/tunnel/tunnel.js "$@"
+node /Users/anuv/Documents/GitHub/tunnel.js/tunnel.js "$@"
