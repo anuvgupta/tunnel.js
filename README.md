@@ -1,4 +1,4 @@
-# tunnel
+# tunnel.js
 
 Automated seamless switching between multiple SSH tunnels via SOCKS proxy settings.  
  Intended for macOS use.
