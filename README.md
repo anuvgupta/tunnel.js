@@ -36,11 +36,12 @@ Populate `config.json` with configurations for each tunnel required:
     -   Proxies can then be manually (or automatically, in this script) configured to localhost:8888
 
 ### usage
-
+`tunnel config_name on/off`  
 Each network service can only have one SOCKS proxy enabled for it at a time.
-So for each network service, ensure to turn off the tunnel on that service before opening a new one on the same service.
-Running script with "on" will background the tunnel process and log to a file `logs/config_name.log`. Either the node.js script or the executable can be used as such:  
-`tunnel lightsail on`  
-`node tunnel.js lightsail off`  
-`node tunnel.js second_config on`  
-`tunnel second_config off`  
+So for each network service, ensure to turn off the tunnel on that service before opening a new one on the same service.  
+Running the script with "on" will update and enable the SOCKS proxy, create and background the tunnel process, and log to a file `logs/config_name.log`. Running the script with "off" will disable the SOCKS proxy, kill the tunnel process, and quit.  
+Either the node.js script or the executable can be used as such:  
+-  `tunnel lightsail on`  
+-  `node tunnel.js lightsail off`  
+-  `node tunnel.js second_config on`  
+-  `tunnel second_config off`  
