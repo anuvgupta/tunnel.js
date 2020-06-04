@@ -39,7 +39,7 @@ Populate `config.json` with configurations for each tunnel required:
 
 Each network service can only have one SOCKS proxy enabled for it at a time.
 So for each network service, ensure to turn off the tunnel on that service before opening a new one on the same service.
-Either the node.js script or the executable can be used as such:  
+Running script with "on" will background the tunnel process and log to a file `logs/config_name.log`. Either the node.js script or the executable can be used as such:  
 `tunnel lightsail on`  
 `node tunnel.js lightsail off`  
 `node tunnel.js second_config on`  
