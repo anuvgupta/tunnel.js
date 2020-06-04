@@ -1,0 +1,2 @@
+channel 3: open failed: connect failed: open failed
+client_loop: send disconnect: Broken pipe

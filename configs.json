@@ -1,0 +1,8 @@
+{
+    "lightsail": {
+        "net_service": "Wi-Fi",
+        "ssh_config": "lightsail",
+        "local_port": 16261,
+        "pid": 45555
+    }
+}
