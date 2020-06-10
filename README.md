@@ -1,6 +1,8 @@
 # tunnel.js
 
-Automated seamless switching between multiple SSH tunnels via SOCKS proxy settings. Efficient, cost-effective, secure "poor man's" alternative to VPNs. Intended for macOS use.
+Automated seamless switching between multiple SSH tunnels via SOCKS proxy settings.  
+Efficient, cost-effective, secure "poor man's" alternative to a personal VPN.  
+Intended for macOS use.  
 
 ### configuration
 
