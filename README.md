@@ -43,8 +43,6 @@ Automated seamless switching between multiple SSH tunnels via SOCKS proxy settin
 
 ### usage
 
-Notes:
-
 -   For each config, a tunnel can be opened via `tunnel config_name open` (and closed `tunnel config_name close`)
 -   Logs of each tunnel process will be stored in `logs/config_name.log`, but can be tailed using `tunnel config_name tail`
 -   If a tunnel process dies by itself, the config status/PID will not be updated, so `tunnel config_name clean` must be called
