@@ -2,6 +2,7 @@
    "lightsail": {
       "net_service": "Wi-Fi",
       "ssh_config": "lightsail",
+      "reverse_port": 22333,
       "local_port": 16261,
       "pid": null
    }

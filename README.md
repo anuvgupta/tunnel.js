@@ -1,11 +1,12 @@
 # tunnel.js
 
-Automated seamless switching between multiple SSH tunnels via SOCKS proxy settings.  
- Intended for macOS use.
+Automated seamless switching between multiple SSH tunnels via SOCKS proxy settings. Intended for macOS use.
 
 ### configuration
 
-Populate `config.json` with configurations for each tunnel required:
+1. First, edit the script `tunnel` (not `tunnel.js`), setting `script_path` to the absolute path on your disk to the `tunnel.js` script (ie. `script_path=/Users/anuv/Documents/GitHub/tunnel.js/tunnel.js`).
+2. Then, symlink (with absolute paths) the `tunnel` script to `/usr/local/bin` like so (sudo may be required): `ln -s /Users/anuv/Documents/GitHub/tunnel.js/tunnel /usr/local/bin`
+3. Finally, populate `configs.json` with configurations for each tunnel required:
 
 ```
 {
@@ -18,10 +19,11 @@ Populate `config.json` with configurations for each tunnel required:
     "second_config": {
         "net_service": "Wi-Fi",
         "ssh_config": "ssh_config_name",
+        "reverse_port": 22333,
         "local_port": 16262,
         "pid": null
     },
-    "third_config": { ... }
+    "another_config": { ... }
 }
 
 ```
@@ -32,16 +34,29 @@ Populate `config.json` with configurations for each tunnel required:
 -   `ssh_config` is the name of the SSH configuration that refers to the SSH-enabled server you will use as a proxy
     -   SSH configurations on macOS are usually created and stored in the file `~/.ssh/config`
 -   `local_port` is any unreserved/free port on your local macOS device
-    -   For example, if you set`local_port`=8888, then your tunnel will be locally accessible at localhost:8888
+    -   For example, if you set `local_port`=8888, then your tunnel will be locally accessible at localhost:8888
     -   Proxies can then be manually (or automatically, in this script) configured to localhost:8888
+-   `reverse_port` (optional) is any unreserved/free port on both your local macOS device and your remote server
+    -   If specified, port-forwards connections to remote_server:reverse_port back to local_macos:reverse_port
+    -   Useful for peer-to-peer connections (ie. torrent)
+        -   For example, if `reverse_port`=22333 (and `local_port`=16262), then in a torrent client, set the "port used for incoming connections" to `22333`
+        -   Then, enable (for all peer-to-peer connections and torrent downloads) a SOCKS5 proxy to `localhost:16262`
 
 ### usage
-`tunnel config_name on/off`  
-Each network service can only have one SOCKS proxy enabled for it at a time.
-So for each network service, ensure to turn off the tunnel on that service before opening a new one on the same service.  
-Running the script with "on" will update and enable the SOCKS proxy, create and background the tunnel process, and log to a file `logs/config_name.log`. Running the script with "off" will disable the SOCKS proxy, kill the tunnel process, and quit.  
-Either the node.js script or the executable can be used as such:  
--  `tunnel lightsail on`  
--  `node tunnel.js lightsail off`  
--  `node tunnel.js second_config on`  
--  `tunnel second_config off`  
+
+Notes:
+
+-   For each config, a tunnel can be opened via `tunnel config_name open` (and closed `tunnel config_name close`)
+-   Logs of each tunnel process will be stored in `logs/config_name.log`, but can be tailed using `tunnel config_name tail`
+-   If a tunnel process dies by itself, the config status/PID will not be updated, so `tunnel config_name clean` must be called
+-   Once a tunnel is opened, use `tunnel config_name enable system` to enable the macOS system SOCKS proxy to the newly opened tunnel
+    -   Now a different config can be enabled over this one, or this one can be disabled via `tunnel config_name disable system`
+    -   Each network service can only have one SOCKS proxy enabled for it at a time
+-   Alternatively, in each terminal/shell opened, call `source tunnel config_name enable shell` to configure the http/https proxies (as well as other untested proxies ie. ftp, telnet)
+    -   Now a different config can be enabled over this one, or this one can be disabled via `source tunnel config_name disable shell`
+    -   The `source` command must be used here, as the proxy is enabled by modifying shell environment variables
+    -   To enable the tunnel for all shells opened, put that same command `source tunnel config_name enable shell` in your shell profile (ie. `.bash_profile`, `.zprofile`)
+        -   Not recommended if multiple tunnels are used simultaneously, in parallel, or in succession
+-   The script does not automate enabling the SOCKS proxy for torrent clients, but it can be done manually
+    -   See above (at the end of the configuration section) for how to set up torrent clients manually
+-   Do not use the `tunnel.js` script directly; always use the `tunnel` shell script or its symlink, or `source tunnel`

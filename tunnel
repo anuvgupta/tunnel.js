@@ -1,2 +1,22 @@
 #!/bin/bash
-node /Users/anuv/Documents/GitHub/tunnel.js/tunnel.js "$@"
+script_path=/Users/anuv/Documents/GitHub/tunnel.js/tunnel.js
+
+script_output=$(node $script_path "$@")
+if [[ "$script_output" = socks5://* ]] ; then
+    proxy_server="$script_output"
+    export http_proxy="$proxy_server" ; export HTTP_PROXY="$proxy_server" ;
+    export https_proxy="$proxy_server" ; export HTTPS_PROXY="$proxy_server" ;
+    export ftp_proxy="$proxy_server" ; export FTP_PROXY="$proxy_server" ;
+    export telnet_proxy="$proxy_server" ; export TELNET_PROXY="$proxy_server" ;
+    export all_proxy="$proxy_server" ; export ALL_PROXY="$proxy_server" ;
+    export no_proxy=169.254/16,127.0.0.1,[::1],[::],1],localhost,*.local,anuv ;
+    export NO_PROXY=169.254/16,127.0.0.1,[::1],[::],1],localhost,*.local,anuv ;
+    echo "enabled shell proxy $proxy_server"
+elif [[ "$script_output" = socks5:disable* ]] || [[ "$script_output" = "socks5:disable" ]]; then
+    unset http_proxy ; unset HTTP_PROXY ; unset https_proxy ; unset HTTPS_PROXY ;
+    unset ftp_proxy ; unset FTP_PROXY ; unset telnet_proxy ; unset TELNET_PROXY ;
+    unset all_proxy ; unset ALL_PROXY ; unset no_proxy ; unset NO_PROXY ;
+    echo "disabled shell proxy"
+else
+    echo "$script_output"
+fi

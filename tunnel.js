@@ -40,8 +40,9 @@ var configs = {
 };
 
 var app = {
-    tail: log_path => {
-        var tail = spawn('tail', ['-f', log_path]);
+    tail_logs: (config, config_name, callback = null) => {
+        console.log('tailing tunnel log: ');
+        var tail = spawn('tail', ['-f', `${__dirname}/logs/${config_name}.log`]);
         tail.stdout.on('data', data => {
             console.log(data.toString());
         });
@@ -50,91 +51,148 @@ var app = {
         });
         tail.on('exit', code => {
             console.log(`log exited (code ${code.toString()}`);
+            if (callback) callback();
         });
     },
-    main: _ => {
-        if (arguments.length > 0 && arguments.length < 3) {
-            if (arguments[0] == 'help') {
-                console.log('tunnel.js\nusage: tunnel config_name on/off\n       node tunnel.js config_name on/off');
-            } else if (arguments.length == 1) {
-                console.error('error: invalid argument');
-            } else if (arguments.length == 2) {
-                if (!(['on', 'off'].includes(arguments[1]))) {
-                    console.error('error: second argument should be "on" or "off"');
+    establish_tunnel: (config, config_name, callback = null) => {
+        console.log('establishing tunnel');
+        if (config.pid === null) {
+            var reverse_proxy = config.hasOwnProperty("reverse_port") && config.reverse_port ? `-R ${config.reverse_port}:localhost:${config.reverse_port}` : '';
+            exec(`nohup ssh -2 -NAT ${reverse_proxy} -D ${config.local_port} ${config.ssh_config} > ${__dirname}/logs/${config_name}.log 2>&1 & echo $!`, (err, stdout, stderr) => {
+                if (err) {
+                    console.error('error: establishing tunnel', err);
+                } else if (stderr && stderr.trim() != "") {
+                    console.error('error: establishing tunnel', stderr);
                 } else {
-                    var config_name = arguments[0];
-                    var change_status = arguments[1] == 'on' ? 1 : 0;
-                    configs.load(_ => {
-                        if (configs.data.hasOwnProperty(config_name) && configs.data[config_name]) {
-                            var config = configs.data[config_name];
-                            if (change_status) {
-                                if (config.pid === null) {
-                                    exec(`networksetup -setsocksfirewallproxy ${config.net_service} localhost ${config.local_port}`, (err, stdout, stderr) => {
-                                        if (err) {
-                                            console.error('error: updating proxy settings', err)
-                                        } else if (stderr && stderr.trim() != "") {
-                                            console.error('error: updating proxy settings', stderr)
-                                        } else {
-                                            console.log('updated proxy settings');
-                                            exec(`networksetup -setsocksfirewallproxystate ${config.net_service} on`, (err2, stdout2, stderr2) => {
-                                                if (err2) {
-                                                    console.error('error: enabling proxy', err2)
-                                                } else if (stderr2 && stderr2.trim() != "") {
-                                                    console.error('error: enabling proxy', stderr2)
-                                                } else {
-                                                    console.log("enabled proxy");
-                                                    exec(`nohup ssh -2 -NAT -D ${config.local_port} ${config.ssh_config} > ${__dirname}/logs/${config_name}.log 2>&1 & echo $!`, (err3, stdout3, stderr3) => {
-                                                        if (err3) {
-                                                            console.error('error: establishing tunnel', err3)
-                                                        } else if (stderr3 && stderr3.trim() != "") {
-                                                            console.error('error: establishing tunnel', stderr3)
-                                                        } else {
-                                                            var pid = parseInt(stdout3);
-                                                            configs.data[config_name].pid = pid;
-                                                            console.log(`established tunnel (pid: ${pid})`);
-                                                            configs.save(_ => {
-                                                                console.log('note: terminating this script will not close the tunnel');
-                                                                console.log('tunnel log: ');
-                                                                app.tail(`${__dirname}/logs/${config_name}.log`);
-                                                            });
-                                                        }
-                                                    });
-                                                }
-                                            });
-                                        }
-                                    });
-                                } else console.error(`error: turn ${config_name} off first`);
-                            } else {
-                                if (config.pid === null)
-                                    console.error(`error: turn ${config_name} on first`);
-                                else {
-                                    exec(`networksetup -setsocksfirewallproxystate ${config.net_service} off`, (err, stdout, stderr) => {
-                                        if (err) {
-                                            console.error('error: disabling proxy', err)
-                                        } else if (stderr && stderr.trim() != "") {
-                                            console.error('error: disabling proxy', stderr)
-                                        } else {
-                                            console.log("disabled proxy");
-                                            exec(`kill -9 ${config.pid}`, (err2, stdout2, stderr2) => {
-                                                if (err2) {
-                                                    console.error('error: closing tunnel', err2)
-                                                } else if (stderr2 && stderr2.trim() != "") {
-                                                    console.error('error: closing tunnel', stderr2)
-                                                } else {
-                                                    console.log('closed tunnel');
-                                                    configs.data[config_name].pid = null;
-                                                    configs.save();
-                                                }
-                                            });
-                                        }
-                                    });
-                                }
-                            }
-                        } else console.error('error: invalid configuration');
+                    var pid = parseInt(stdout);
+                    configs.data[config_name].pid = pid;
+                    console.log(`established tunnel`);
+                    configs.save(_ => {
+                        console.log(`pid ${pid} saved`);
+                        if (callback) callback();
                     });
                 }
+            });
+        } else console.error('error: destroy/clean existing tunnel first');
+    },
+    destroy_tunnel: (config, config_name, callback = null) => {
+        console.log('destroying tunnel');
+        if (config.pid === null) console.error('error: establish a tunnel first');
+        else {
+            exec(`kill -9 ${config.pid}`, (err, stdout, stderr) => {
+                if (err) {
+                    console.error('error: destroying tunnel', err)
+                } else if (stderr && stderr.trim() != "") {
+                    console.error('error: destroying tunnel', stderr)
+                } else {
+                    console.log('destroyed tunnel');
+                    var old_pid = config.pid;
+                    configs.data[config_name].pid = null;
+                    configs.save(_ => {
+                        console.log(`removed pid ${old_pid}`);
+                        if (callback) callback();
+                    });
+                }
+            });
+        }
+    },
+    clean_tunnel: (config, config_name, callback = null) => {
+        console.log('cleaning tunnel');
+        if (config.pid === null) console.error('error: establish a tunnel first');
+        else {
+            configs.data[config_name].pid = null;
+            configs.save(_ => {
+                console.log(`removed pid ${config.pid}`);
+                console.log('cleaned tunnel');
+                if (callback) callback();
+            });
+        }
+    },
+    enable_system_proxy: (config, config_name, callback = null) => {
+        exec(`networksetup -setsocksfirewallproxy ${config.net_service} localhost ${config.local_port}`, (err, stdout, stderr) => {
+            if (err) {
+                console.error('error: updating system proxy settings', err)
+            } else if (stderr && stderr.trim() != "") {
+                console.error('error: updating system proxy settings', stderr)
+            } else {
+                console.log('updated system proxy settings');
+                exec(`networksetup -setsocksfirewallproxystate ${config.net_service} on`, (err2, stdout2, stderr2) => {
+                    if (err2) {
+                        console.error('error: enabling system proxy', err2)
+                    } else if (stderr2 && stderr2.trim() != "") {
+                        console.error('error: enabling system proxy', stderr2)
+                    } else {
+                        console.log("enabled system proxy");
+                        if (callback) callback();
+                    }
+                });
             }
-        } else console.error('error: incorrect # of arguments');
+        });
+    },
+    disable_system_proxy: (config, config_name, callback = null) => {
+        exec(`networksetup -setsocksfirewallproxystate ${config.net_service} off`, (err, stdout, stderr) => {
+            if (err) {
+                console.error('error: disabling system proxy', err)
+            } else if (stderr && stderr.trim() != "") {
+                console.error('error: disabling system proxy', stderr)
+            } else {
+                console.log("disabled system proxy");
+                if (callback) callback();
+            }
+        });
+    },
+    enable_shell_proxy: (config, config_name, callback = null) => {
+        console.log(`socks5://localhost:${config.local_port}/`);
+        if (callback) callback();
+    },
+    disable_shell_proxy: (config, config_name, callback = null) => {
+        console.log(`socks5:disable`);
+        if (callback) callback();
+    },
+    main: _ => {
+        if (arguments[0] == 'help') {
+            console.log(`tunnel.js usage:\n` +
+                `   tunnel $config_name open/close/clean/tail\n` +
+                `   tunnel $config_name enable/disable system\n` +
+                `   source tunnel $config_name enable/disable shell\n` +
+                `(do not use tunnel.js directly)`
+            );
+        } else if (arguments.length < 2) {
+            console.error('error: more arguments needed');
+        } else {
+            var config_name = arguments[0];
+            configs.load(_ => {
+                if (configs.data.hasOwnProperty(config_name) && configs.data[config_name]) {
+                    var config = configs.data[config_name];
+                    if (arguments[1] == 'open') {
+                        app.establish_tunnel(config, config_name);
+                    } else if (arguments[1] == 'close') {
+                        app.destroy_tunnel(config, config_name);
+                    } else if (arguments[1] == 'clean') {
+                        app.clean_tunnel(config, config_name);
+                    } else if (arguments[1] == 'tail') {
+                        app.tail_logs(config, config_name);
+                    } else if (arguments[1] == 'enable' || arguments[1] == 'disable') {
+                        var enable = arguments[1] == 'enable' ? true : false;
+                        if (arguments.length < 3) {
+                            console.error('error: more arguments needed');
+                        } else {
+                            if (arguments[2] == 'system') {
+                                if (enable) app.enable_system_proxy(config, config_name);
+                                else app.disable_system_proxy(config, config_name);
+                            } else if (arguments[2] == 'shell') {
+                                if (enable) app.enable_shell_proxy(config, config_name);
+                                else app.disable_shell_proxy(config, config_name);
+                            } else {
+                                console.error(`error: invalid target ${arguments[2]} (use shell/system)`);
+                            }
+                        }
+                    } else {
+                        console.error(`error: invalid action ${arguments[1]} (use open/close/clean/tail/enable/disable)`);
+                    }
+                } else console.error(`error: invalid configuration ${arguments[0]}`);
+            });
+        }
     }
 };
 
