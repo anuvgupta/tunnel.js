@@ -60,7 +60,6 @@ Intended for macOS use.
     -   For example, if `reverse_port`=22333 (and `local_port`=16262), then in a torrent client, set the "port used for incoming connections" to `22333`
     -   Then, enable (for all peer-to-peer connections and torrent downloads) a SOCKS5 proxy to `localhost:16262`
 -   Do not use the `tunnel.js` script directly; always use the `tunnel` shell script or its symlink, or `source tunnel`
--   Do not use the `tunnel.js` script directly; always use the `tunnel` shell script or its symlink, or `source tunnel`
 
 
 
