@@ -2,7 +2,7 @@
 
 Seamless automation of multiple SSH tunnels via SOCKS proxy settings.  
 Efficient, cost-effective, secure "poor man's" alternative to a personal VPN.  
-Intended for macOS use.  
+Intended for macOS use. Requires a remote SSH-enabled Linux server.  
 
 ### configuration
 
